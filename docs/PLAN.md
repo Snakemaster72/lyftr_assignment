@@ -76,70 +76,70 @@ fly.toml (backend)  frontend/vercel.json (if needed)
 ## 4. Contract checklist
 
 ### API — general
-- [ ] Exactly 3 paths: `GET /health`, `POST /chat`, `GET /sessions/{session_id}/messages`
-- [ ] `/docs`, `/redoc`, `/openapi.json` disabled unless `ENABLE_DOCS=true`
-- [ ] All bodies JSON; every error JSON with `detail`; no stack traces / HTML (global 500 handler → `{"detail":"internal server error"}`; JSON 404/405)
-- [ ] `X-Request-ID` response header; one-line structured log per request (request id, session id, source, key_id, fallback_attempts, latency) — no keys, no message content
+- [x] Exactly 3 paths: `GET /health`, `POST /chat`, `GET /sessions/{session_id}/messages`
+- [x] `/docs`, `/redoc`, `/openapi.json` disabled unless `ENABLE_DOCS=true`
+- [x] All bodies JSON; every error JSON with `detail`; no stack traces / HTML (global 500 handler → `{"detail":"internal server error"}`; JSON 404/405)
+- [x] `X-Request-ID` response header; one-line structured log per request (request id, session id, source, key_id, fallback_attempts, latency) — no keys, no message content
 
 ### GET /health
-- [ ] 200 `{"status":"ok","keys_configured":N,"cache_enabled":true}` (+ extras: model, version)
-- [ ] Really checks DB (`SELECT 1`) and ≥1 key loaded; else 503 JSON
+- [x] 200 `{"status":"ok","keys_configured":N,"cache_enabled":true}` (+ extras: model, version)
+- [x] Really checks DB (`SELECT 1`) and ≥1 key loaded; else 503 JSON
 
 ### POST /chat — request
-- [ ] `session_id` string, required, 1–128 chars, not whitespace-only → else 422
-- [ ] `message` string, required, 1–4000 chars **after strip** → else 422 (empty, whitespace-only, 4001)
-- [ ] `system_prompt` optional; >4000 → 422; stored per session, used for this and later turns; default `DEFAULT_SYSTEM_PROMPT`
-- [ ] Malformed JSON → 422 (FastAPI default)
-- [ ] Unknown `session_id` starts a new session
+- [x] `session_id` string, required, 1–128 chars, not whitespace-only → else 422
+- [x] `message` string, required, 1–4000 chars **after strip** → else 422 (empty, whitespace-only, 4001)
+- [x] `system_prompt` optional; >4000 → 422; stored per session, used for this and later turns; default `DEFAULT_SYSTEM_PROMPT`
+- [x] Malformed JSON → 422 (FastAPI default)
+- [x] Unknown `session_id` starts a new session
 
 ### POST /chat — response 200
-- [ ] `session_id` (echo)
-- [ ] `reply` non-empty string
-- [ ] `metadata.resolution_source` exactly `LIVE_INFERENCE` | `LLM_CACHE`
-- [ ] `metadata.model` LiteLLM model string of the answering deployment (cache: model that produced cached reply)
-- [ ] `metadata.latency_ms` int, `perf_counter` over whole handler
-- [ ] `metadata.input_tokens` int (this request only)
-- [ ] `metadata.output_tokens` int (this request only)
-- [ ] `metadata.key_id` `key_1`/`key_2`/… ; `null` on cache; never the key itself
-- [ ] `metadata.fallback_attempts` int; `0` on cache
+- [x] `session_id` (echo)
+- [x] `reply` non-empty string
+- [x] `metadata.resolution_source` exactly `LIVE_INFERENCE` | `LLM_CACHE`
+- [x] `metadata.model` LiteLLM model string of the answering deployment (cache: model that produced cached reply)
+- [x] `metadata.latency_ms` int, `perf_counter` over whole handler
+- [x] `metadata.input_tokens` int (this request only)
+- [x] `metadata.output_tokens` int (this request only)
+- [x] `metadata.key_id` `key_1`/`key_2`/… ; `null` on cache; never the key itself
+- [x] `metadata.fallback_attempts` int; `0` on cache
 
 ### POST /chat — errors & rules
-- [ ] All keys failed → 503 `{"detail":"all providers unavailable"}`
-- [ ] 422/503 → nothing written to history
-- [ ] user + assistant rows written in one transaction after success; assistant `metadata` = full metadata JSON
-- [ ] Failover on 429, quota, 5xx (real and simulated); also 401 on one key
-- [ ] LLM messages = `[system] + stored turns (oldest first) + new user msg` (optional `HISTORY_MAX_MESSAGES` cap)
-- [ ] Cache key = model + full message list; same first message in new session → `LLM_CACHE` 2nd time; different message never cached
-- [ ] Cache hit: identical reply, stored usage tokens, `key_id=null`, `fallback_attempts=0`, faster than live (warm-up at startup)
-- [ ] Two equal-length first messages in new sessions → ~same input_tokens
+- [x] All keys failed → 503 `{"detail":"all providers unavailable"}`
+- [x] 422/503 → nothing written to history
+- [x] user + assistant rows written in one transaction after success; assistant `metadata` = full metadata JSON
+- [x] Failover on 429, quota, 5xx (real and simulated); also 401 on one key
+- [x] LLM messages = `[system] + stored turns (oldest first) + new user msg` (optional `HISTORY_MAX_MESSAGES` cap)
+- [x] Cache key = model + full message list; same first message in new session → `LLM_CACHE` 2nd time; different message never cached
+- [x] Cache hit: identical reply, stored usage tokens, `key_id=null`, `fallback_attempts=0`, faster than live (warm-up at startup)
+- [x] Two equal-length first messages in new sessions → ~same input_tokens
 
 ### X-Simulate-Failure
-- [ ] Format `key_id=status[,key_id=status]`, `*` = all; statuses 429/500/502/503
-- [ ] Specific entry overrides `*`; unknown key ids ignored; malformed → 422 with clear detail
-- [ ] Honoured only when `ENABLE_FAILURE_SIMULATION=true`; ignored otherwise
-- [ ] This request only (ContextVar); does not leak into next request
-- [ ] When active, cache read bypassed
-- [ ] `key_1=429` → 200 key_2; `key_1=500` → 200 key_2; `*=429` → 503 + nothing in history
-- [ ] Simulated request returns a real answer, never an error wrapped in 200
+- [x] Format `key_id=status[,key_id=status]`, `*` = all; statuses 429/500/502/503
+- [x] Specific entry overrides `*`; unknown key ids ignored; malformed → 422 with clear detail
+- [x] Honoured only when `ENABLE_FAILURE_SIMULATION=true`; ignored otherwise
+- [x] This request only (ContextVar); does not leak into next request
+- [x] When active, cache read bypassed
+- [x] `key_1=429` → 200 key_2; `key_1=500` → 200 key_2; `*=429` → 503 + nothing in history
+- [x] Simulated request returns a real answer, never an error wrapped in 200
 
 ### GET /sessions/{session_id}/messages
-- [ ] `{"session_id":..., "messages":[...]}` oldest first
-- [ ] user rows `{role, content}`; assistant rows `{role, content, metadata}`
-- [ ] No system prompt
-- [ ] Unknown session → 404 `{"detail":"session not found"}`
+- [x] `{"session_id":..., "messages":[...]}` oldest first
+- [x] user rows `{role, content}`; assistant rows `{role, content, metadata}`
+- [x] No system prompt
+- [x] Unknown session → 404 `{"detail":"session not found"}`
 
 ### Storage
-- [ ] SQLite only; `messages` table exactly as PDF (+ index `(session_id, id)`); `sessions` table (`session_id` PK, `system_prompt`, `created_at`, `updated_at`)
-- [ ] Schema created on startup; `created_at` ISO-8601 server time
-- [ ] `DATABASE_URL=sqlite:////data/app.db` → `/data/app.db`; parent dir created; WAL
+- [x] SQLite only; `messages` table exactly as PDF (+ index `(session_id, id)`); `sessions` table (`session_id` PK, `system_prompt`, `created_at`, `updated_at`)
+- [x] Schema created on startup; `created_at` ISO-8601 server time
+- [x] `DATABASE_URL=sqlite:////data/app.db` → `/data/app.db`; parent dir created; WAL
 - [ ] File on Docker named volume at `/data`; survives restarts
 
 ### Env vars (all in `.env.example`, placeholders only)
-- [ ] `LLM_API_KEYS` (≥2, fail fast otherwise; ids key_1.. in order)
-- [ ] `DATABASE_URL`
-- [ ] `ALLOWED_ORIGINS` (CORS; allow `X-Simulate-Failure` + `Content-Type` headers; expose `X-Request-ID`)
-- [ ] `ENABLE_FAILURE_SIMULATION`
-- [ ] Ours: `LLM_MODEL`, `LLM_MODELS`, `LLM_API_BASE`, `DEFAULT_SYSTEM_PROMPT`, `CACHE_TYPE`, `CACHE_DIR`, `LLM_TIMEOUT_SECONDS`, `HISTORY_MAX_MESSAGES`, `ENABLE_DOCS`, `LOG_LEVEL`
+- [x] `LLM_API_KEYS` (≥2, fail fast otherwise; ids key_1.. in order)
+- [x] `DATABASE_URL`
+- [x] `ALLOWED_ORIGINS` (CORS; allow `X-Simulate-Failure` + `Content-Type` headers; expose `X-Request-ID`)
+- [x] `ENABLE_FAILURE_SIMULATION`
+- [x] Ours: `LLM_MODEL`, `LLM_MODELS`, `LLM_API_BASE`, `DEFAULT_SYSTEM_PROMPT`, `CACHE_TYPE`, `CACHE_DIR`, `LLM_TIMEOUT_SECONDS`, `HISTORY_MAX_MESSAGES`, `ENABLE_DOCS`, `LOG_LEVEL`
 - [ ] Frontend: `VITE_API_BASE_URL` (build) + runtime `API_BASE_URL` → `/config.js`; fallback `http://localhost:8000`
 
 ### Frontend (data-testid)
@@ -166,7 +166,7 @@ fly.toml (backend)  frontend/vercel.json (if needed)
 
 ### Repo / deliverables
 - [ ] Structure: `/backend`, `/frontend`, `docker-compose.yml`, `Makefile`, `.env.example`, `README.md`
-- [ ] Backend tests (fake upstream server) — all PDF behaviours (see §5)
+- [x] Backend tests (fake upstream server) — all PDF behaviours (see §5)
 - [ ] `scripts/verify.sh`
 - [ ] CI: ruff + pytest; frontend typecheck + build; compose build; tests inside built backend image
 - [ ] No secrets in git history
@@ -180,7 +180,7 @@ health shape · happy-path shape/types · multi-turn (2nd upstream payload conta
 ## 6. Milestones
 
 - [x] M1 Backend core
-- [ ] M2 Backend tests green
+- [x] M2 Backend tests green
 - [ ] M3 Frontend
 - [ ] M4 Docker + Makefile (`make up` from clean clone)
 - [ ] M5 verify.sh, CI, README
@@ -196,3 +196,4 @@ health shape · happy-path shape/types · multi-turn (2nd upstream payload conta
 - In-memory cache defaults to 200 items / 600 s TTL → replaced with configurable `CACHE_MAX_ITEMS` / `CACHE_TTL_SECONDS`.
 - First cache hit ~330 ms cold → ~2 ms after the lifespan warm-up.
 - 502 simulation uses `litellm.BadGatewayError` (status 502).
+- `x-litellm-attempted-fallbacks` reports 1 even when 2 keys failed (3-key pool) → `fallback_attempts` = deployments seen by our pre-call hook − 1 (header only as fallback). Locked in by `test_three_keys_fail_over_in_order`.

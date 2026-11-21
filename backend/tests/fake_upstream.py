@@ -5,6 +5,7 @@ made to fail independently:
 
     FAIL429 -> 429 rate limit      FAIL500 -> 500 server error
     FAIL401 -> 401 bad key         EMPTY   -> 200 with empty content
+    SLOW    -> answers only after SLOW_DELAY_SECONDS (for timeout failover)
     anything else -> 200 with a deterministic reply
 
 Every request is recorded so tests can inspect the payload that was sent.
@@ -19,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 
 LIVE_DELAY_SECONDS = 0.05  # makes "cache hit is faster than live" measurable
+SLOW_DELAY_SECONDS = 3.0
 
 
 def fake_reply(messages: list[dict[str, Any]]) -> str:
@@ -54,7 +56,7 @@ class FakeUpstream:
                 if key == "FAIL401":
                     return self._send(401, {"error": {"message": "bad key", "type": "auth"}})
 
-                time.sleep(LIVE_DELAY_SECONDS)
+                time.sleep(SLOW_DELAY_SECONDS if key == "SLOW" else LIVE_DELAY_SECONDS)
                 messages = body.get("messages", [])
                 content = "" if key == "EMPTY" else fake_reply(messages)
                 prompt_tokens = sum(count_tokens(m.get("content") or "") for m in messages)

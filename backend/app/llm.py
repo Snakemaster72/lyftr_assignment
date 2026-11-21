@@ -6,7 +6,7 @@ import asyncio
 import contextvars
 import logging
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import litellm
@@ -25,9 +25,17 @@ MODEL_GROUP = "chat"
 SIMULATION_STATUSES = frozenset({429, 500, 502, 503})
 WILDCARD = "*"
 
-# Per-request failure plan ({key_id: status}). A ContextVar keeps it scoped to the current request.
-_simulation_plan: contextvars.ContextVar[Mapping[str, int] | None] = contextvars.ContextVar(
-    "simulation_plan", default=None
+
+@dataclass
+class _RequestContext:
+    """Per-request state shared with the LiteLLM hook through a ContextVar (no globals)."""
+
+    plan: Mapping[str, int] | None  # simulated failures, {key_id: status}
+    attempts: list[str] = field(default_factory=list)  # deployments tried, in order
+
+
+_request_context: contextvars.ContextVar[_RequestContext | None] = contextvars.ContextVar(
+    "llm_request_context", default=None
 )
 
 
@@ -84,18 +92,20 @@ def _simulated_error(status: int, model: str) -> Exception:
 
 
 class FailureSimulationHook(CustomLogger):
-    """Raises a provider-style error for deployments listed in the current request's plan.
+    """Records each deployment the Router tries and fails the ones listed in the request's plan.
 
-    Runs after the Router has picked a deployment and before the HTTP call, so the Router
-    fails over exactly as it would on a real provider error.
+    Runs after the Router has picked a deployment and before the HTTP call, so a raised
+    error makes the Router fail over exactly as it would on a real provider error.
     """
 
     async def async_pre_call_deployment_hook(self, kwargs: dict[str, Any], call_type: Any) -> dict | None:
-        plan = _simulation_plan.get()
-        if not plan:
+        ctx = _request_context.get()
+        if ctx is None:
             return None
         model_info = kwargs.get("model_info") or (kwargs.get("litellm_params") or {}).get("model_info") or {}
-        status = plan.get(model_info.get("id", ""))
+        key_id = str(model_info.get("id", ""))
+        ctx.attempts.append(key_id)
+        status = ctx.plan.get(key_id) if ctx.plan else None
         if status is not None:
             raise _simulated_error(status, str(kwargs.get("model", "")))
         return None
@@ -171,23 +181,27 @@ class LLMGateway:
         if simulation is not None:
             # Always exercise the failover path: never serve a simulated request from cache.
             kwargs["cache"] = {"no-cache": True}
-        token = _simulation_plan.set(simulation)
+        ctx = _RequestContext(plan=simulation)
+        token = _request_context.set(ctx)
         try:
             response = await self.router.acompletion(model=MODEL_GROUP, messages=messages, **kwargs)
         except (openai.APIError, RouterRateLimitError) as exc:
             log.warning("all providers failed: %s", type(exc).__name__)
             raise AllProvidersUnavailableError from exc
         finally:
-            _simulation_plan.reset(token)
-        return self._to_result(response)
+            _request_context.reset(token)
+        return self._to_result(response, ctx.attempts)
 
-    def _to_result(self, response: Any) -> CompletionResult:
+    def _to_result(self, response: Any, attempts: list[str]) -> CompletionResult:
         hidden = getattr(response, "_hidden_params", None) or {}
         cache_hit = hidden.get("cache_hit") is True
         deployment_id = hidden.get("model_id")
         model = self.models_by_key.get(deployment_id, self.settings.models[0])
         usage = getattr(response, "usage", None)
-        attempted = (hidden.get("additional_headers") or {}).get("x-litellm-attempted-fallbacks") or 0
+        # LiteLLM's x-litellm-attempted-fallbacks header caps at 1 with 3+ keys (1.110.2),
+        # so count the deployments our hook saw instead; the header is only a fallback.
+        header = (hidden.get("additional_headers") or {}).get("x-litellm-attempted-fallbacks") or 0
+        attempted = len(attempts) - 1 if attempts else int(header)
         return CompletionResult(
             reply=response.choices[0].message.content.strip(),
             model=model,

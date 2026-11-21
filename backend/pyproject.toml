@@ -17,3 +17,4 @@ ignore = ["S101", "S104"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+filterwarnings = ["ignore::UserWarning:pydantic.*", "ignore::DeprecationWarning"]
