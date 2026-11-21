@@ -245,7 +245,14 @@ PASS  simulation does not leak: next request answered by key_1 key_1
 
 ## 5. Setup Used
 
-TODO: editor and AI tools.
+- **Editor:** VS Code
+- **AI tools:** [Claude Code](https://claude.com/claude-code) (CLI) with Claude Opus 5.5. It was used for:
+  - turning the spec into a contract checklist and plan (`docs/PLAN.md`), then building milestone by milestone (backend → tests → frontend → Docker → CI/verify → deployment), with a commit after each one;
+  - checking LiteLLM's real behaviour on the pinned version before relying on it. That's how the `attempted-fallbacks` header undercount, the cache-hit-path dependencies (`orjson`, `soundfile`) and the retired Groq Llama models were found;
+  - writing the tests and `scripts/verify.sh`, and running them against a fake upstream, real Groq keys, the Docker stack and the Render deployment.
+- I reviewed the design decisions and every step that touched accounts, keys or deployment (Groq keys, GitHub, Render) and did those myself. Keys live only in `.env` (git-ignored) and Render's environment settings.
+- **Environment:** Arch Linux, Docker 29 with Compose v5, Python 3.12, Node 22.
+- **Services:** Groq (`openai/gpt-oss-20b`) via LiteLLM, Render (free web service + static site), GitHub Actions.
 
 ## 6. Bonus features
 
@@ -255,6 +262,7 @@ TODO: editor and AI tools.
 - **CI (GitHub Actions).** Ruff + pytest, frontend typecheck/tests/build, `docker compose build`, the backend tests **inside the built runtime image** (which catches dependency gaps on the cache-hit path), and a Compose smoke test.
 - **Simulation bypasses the cache read.** Failover demos stay deterministic even for cached messages.
 - **Empty-reply failover.** A blank completion counts as a key failure and is never cached.
+- **Cold-start aware UI.** The header retries `/health` every 5 s while the backend is unreachable, so a sleeping free-tier backend turns green by itself once it wakes.
 - **Startup cache warm-up.** The first real cache hit takes ~2 ms instead of ~330 ms.
 - **Per-session system prompt** persisted in SQLite, plus `DEFAULT_SYSTEM_PROMPT`.
 - **`HISTORY_MAX_MESSAGES`.** Bounds context and cost for long chats.
