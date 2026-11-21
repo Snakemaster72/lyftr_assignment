@@ -1,0 +1,40 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      target: runtime
+    image: lyftr-chatbot-backend
+    env_file: .env
+    environment:
+      # The SQLite file lives on the named volume below.
+      DATABASE_URL: sqlite:////data/app.db
+      CACHE_DIR: /data/llm-cache
+    ports:
+      - "8000:8000"
+    volumes:
+      - app-data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    image: lyftr-chatbot-frontend
+    environment:
+      API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  app-data:

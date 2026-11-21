@@ -24,8 +24,11 @@ SLOW_DELAY_SECONDS = 3.0
 
 
 def fake_reply(messages: list[dict[str, Any]]) -> str:
-    last_user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-    return f"echo: {last_user} (turns={len(messages)})"
+    users = [m["content"] for m in messages if m["role"] == "user"]
+    reply = f"echo: {users[-1] if users else ''} (turns={len(messages)})"
+    if len(users) > 1:  # lets multi-turn "recall" checks pass without a real model
+        reply += " | earlier: " + " / ".join(users[:-1])
+    return reply
 
 
 def count_tokens(text: str) -> int:

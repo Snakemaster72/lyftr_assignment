@@ -165,12 +165,12 @@ fly.toml (backend)  frontend/vercel.json (if needed)
 - [ ] Clean clone: `make up` → both URLs → `make down` → `make up` → history persists; image sizes in README
 
 ### Repo / deliverables
-- [ ] Structure: `/backend`, `/frontend`, `docker-compose.yml`, `Makefile`, `.env.example`, `README.md`
+- [x] Structure: `/backend`, `/frontend`, `docker-compose.yml`, `Makefile`, `.env.example`, `README.md`
 - [x] Backend tests (fake upstream server) — all PDF behaviours (see §5)
-- [ ] `scripts/verify.sh`
+- [x] `scripts/verify.sh`
 - [ ] CI: ruff + pytest; frontend typecheck + build; compose build; tests inside built backend image
 - [ ] No secrets in git history
-- [ ] README headings in order: 1 Live URLs · 2 Run locally (Docker + without) · 3 Design decisions (Mermaid; key fallback, caching, SQLite) · 4 Verification (curl + UI + verify.sh output) · 5 Setup Used (placeholder) · 6 Bonus features
+- [x] README headings in order: 1 Live URLs · 2 Run locally (Docker + without) · 3 Design decisions (Mermaid; key fallback, caching, SQLite) · 4 Verification (curl + UI + verify.sh output) · 5 Setup Used (placeholder) · 6 Bonus features
 - [ ] Deployment: backend (persistent /data, no sleep, `ENABLE_FAILURE_SIMULATION=true`), frontend with `VITE_API_BASE_URL`; CORS allows frontend origin
 
 ## 5. Test matrix (M2)
@@ -182,8 +182,8 @@ health shape · happy-path shape/types · multi-turn (2nd upstream payload conta
 - [x] M1 Backend core
 - [x] M2 Backend tests green
 - [x] M3 Frontend
-- [ ] M4 Docker + Makefile (`make up` from clean clone)
-- [ ] M5 verify.sh, CI, README
+- [~] M4 Docker + Makefile — files written; BLOCKED on local Docker (daemon + compose/buildx plugins) for verification
+- [~] M5 verify.sh, CI, README (CI docker job unverified until Docker is available locally / first push)
 - [ ] M6 Deployment configs + instructions
 - [ ] Bonuses (only after all green): disk cache on /data, mixed providers via `LLM_MODELS`
 

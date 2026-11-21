@@ -45,14 +45,14 @@ def test_sessions_are_isolated(client, upstream):
     assert len(client.get("/sessions/s-iso-b/messages").json()["messages"]) == 2
 
 
-def test_tokens_are_per_request_not_cumulative(client):
+def test_tokens_are_per_request_not_cumulative(client, upstream):
     a = chat(client, "s-tok-a", "alpha beta gamma").json()["metadata"]
     b = chat(client, "s-tok-b", "delta omega theta").json()["metadata"]
     assert a["input_tokens"] == b["input_tokens"]
     second = chat(client, "s-tok-a", "one").json()["metadata"]
     # Second turn's prompt includes the history, but output is only this reply's tokens.
     assert second["input_tokens"] > a["input_tokens"]
-    assert second["output_tokens"] == len(fake_reply([{"role": "user", "content": "one"}] * 3).split())
+    assert second["output_tokens"] == len(fake_reply(upstream.chat_requests()[-1]["body"]["messages"]).split())
 
 
 def test_default_system_prompt_is_used(make_client, upstream):
