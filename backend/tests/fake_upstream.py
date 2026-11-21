@@ -14,6 +14,7 @@ Every request is recorded so tests can inspect the payload that was sent.
 from __future__ import annotations
 
 import json
+import sys
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -33,6 +34,13 @@ def fake_reply(messages: list[dict[str, Any]]) -> str:
 
 def count_tokens(text: str) -> int:
     return max(1, len(text.split()))
+
+
+class _QuietServer(ThreadingHTTPServer):
+    def handle_error(self, request, client_address) -> None:
+        # A client that timed out (the SLOW key) hangs up before the reply is written; that's expected.
+        if not isinstance(sys.exc_info()[1], ConnectionError):
+            super().handle_error(request, client_address)
 
 
 class FakeUpstream:
@@ -94,7 +102,7 @@ class FakeUpstream:
                 self.end_headers()
                 self.wfile.write(data)
 
-        self._server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+        self._server = _QuietServer(("127.0.0.1", port), Handler)
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
 
     @property

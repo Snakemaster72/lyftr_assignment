@@ -27,7 +27,7 @@ FROM base AS test
 RUN pip install --no-cache-dir pytest==9.2.0
 COPY pyproject.toml ./
 COPY tests ./tests
-CMD ["pytest", "-q"]
+CMD ["pytest"]
 
 # ---- runtime ------------------------------------------------------------------
 FROM base AS runtime
