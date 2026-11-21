@@ -1,0 +1,9 @@
+# Runtime dependencies (exact pins; LiteLLM behaviour verified on 1.110.2).
+litellm==1.110.2
+fastapi==0.165.0
+uvicorn==0.54.0
+pydantic==2.14.4
+pydantic-settings==2.16.3
+# Imported by LiteLLM's cache-hit code path (litellm.proxy.*); missing => cache hits crash.
+orjson==3.13.0
+soundfile==0.14.0
