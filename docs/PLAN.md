@@ -171,7 +171,7 @@ fly.toml (backend)  frontend/vercel.json (if needed)
 - [x] CI: ruff + pytest; frontend typecheck + build; compose build; tests inside built backend image (each step verified locally; first GitHub run pending push)
 - [x] No secrets in git history (scanned: 0 key matches; `.env` untracked)
 - [x] README headings in order: 1 Live URLs · 2 Run locally (Docker + without) · 3 Design decisions (Mermaid; key fallback, caching, SQLite) · 4 Verification (curl + UI + verify.sh output) · 5 Setup Used (placeholder) · 6 Bonus features
-- [ ] Deployment (user choice: Render free, `render.yaml`): backend Docker web service with `ENABLE_FAILURE_SIMULATION=true`, frontend static site with `VITE_API_BASE_URL`; CORS allows frontend origin. Known trade-off: free plan sleeps and has no disk (history not persistent on the deployed instance)
+- [x] Deployment (user choice: Render free, `render.yaml`): backend Docker web service with `ENABLE_FAILURE_SIMULATION=true`, frontend static site with `VITE_API_BASE_URL`; CORS allows frontend origin. Known trade-off: free plan sleeps and has no disk (history not persistent on the deployed instance)
 
 ## 5. Test matrix (M2)
 
@@ -184,7 +184,7 @@ health shape · happy-path shape/types · multi-turn (2nd upstream payload conta
 - [x] M3 Frontend
 - [x] M4 Docker + Makefile — clean clone `make up` OK (both URLs, SPA deep link, runtime config.js), server runs as uid 10001, history survives down/up, `make test` 92 passed in image, real-key verify.sh 23/23 against the containers
 - [x] M5 verify.sh, CI, README (CI steps verified locally; first GitHub Actions run happens on push)
-- [~] M6 Deployment configs + instructions — `render.yaml` written; real-key `verify.sh` 23/23 locally; awaiting user's Render deploy
+- [x] M6 Deployment — Render Blueprint live (api + web); `verify.sh` 23/23 against https://lyftr-chatbot-api.onrender.com; CORS allows the web origin; GitHub Actions green on 85177ba
 - [ ] Bonuses (only after all green): disk cache on /data, mixed providers via `LLM_MODELS`
 
 ## 7. Verified on litellm 1.110.2 (M1 notes)

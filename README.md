@@ -6,9 +6,9 @@ React + FastAPI + SQLite chatbot. LiteLLM sits in front of a pool of API keys: i
 
 | | URL |
 |---|---|
-| Frontend | `https://REPLACE-ME.onrender.com` (Render static site) |
-| Backend | `https://REPLACE-ME.onrender.com` (Render free web service) |
-| Health | `https://REPLACE-ME.onrender.com/health` |
+| Frontend | https://lyftr-chatbot-web.onrender.com (Render static site) |
+| Backend | https://lyftr-chatbot-api.onrender.com (Render free web service) |
+| Health | https://lyftr-chatbot-api.onrender.com/health |
 
 The deployed backend runs with `ENABLE_FAILURE_SIMULATION=true`, so `X-Simulate-Failure` works there. It is on Render's free plan, so **the first request after ~15 idle minutes takes about a minute** (cold start), and chat history does not survive a restart (see *Hosting* below).
 
@@ -176,7 +176,7 @@ curl -s $B/sessions/nope/messages            # 404 {"detail":"session not found"
 **`scripts/verify.sh`** runs every scenario above (23 checks) against any backend:
 
 ```bash
-make verify BASE_URL=https://REPLACE-ME.onrender.com
+make verify BASE_URL=https://lyftr-chatbot-api.onrender.com
 ```
 
 Output against the local backend with real Groq keys (`groq/openai/gpt-oss-20b`):
@@ -209,7 +209,37 @@ PASS  simulation does not leak: next request answered by key_1
 23 passed, 0 failed
 ```
 
-Output against the deployed backend: `TODO (paste here after deploying)`.
+Output against the deployed backend (Render, real Groq keys):
+
+```text
+Verifying https://lyftr-chatbot-api.onrender.com (run 1795262730-15894)
+
+PASS  GET /health -> 200 {status ok, keys_configured>=2, cache_enabled true}
+PASS  POST /chat live -> LIVE_INFERENCE with full metadata
+PASS  same first message in new session -> LLM_CACHE, key_id null, fallback 0
+PASS  cache hit returns the identical reply
+PASS  cache hit reports the stored token usage in=100 out=102
+PASS  cache hit is faster than the live call cache=4ms live=567ms
+PASS  a different message is not served from cache LIVE_INFERENCE
+PASS  multi-turn: the bot remembers the name from turn 1 Zorblax1760
+PASS  GET /sessions/{id}/messages -> 4 messages, oldest first, metadata on assistant
+PASS  unknown session -> 404 {detail: session not found}
+PASS  422: missing message
+PASS  422: missing session_id
+PASS  422: empty message
+PASS  422: whitespace-only message
+PASS  422: message over 4000 chars
+PASS  422: empty session_id
+PASS  422: malformed JSON
+PASS  422 requests write nothing to history
+PASS  X-Simulate-Failure: key_1=429 -> 200 answered by key_2 200
+PASS  X-Simulate-Failure: key_1=500 -> 200 answered by key_2 (fallback_attempts 1)
+PASS  X-Simulate-Failure: *=429 -> 503 {detail: all providers unavailable}
+PASS  *=429 adds nothing to history before=4 after=4
+PASS  simulation does not leak: next request answered by key_1 key_1
+
+23 passed, 0 failed
+```
 
 **Automated tests:** `backend/tests` has 92 pytest tests. They run against a fake OpenAI-compatible HTTP server, through the real LiteLLM Router, cache and exception mapping, with nothing in LiteLLM mocked. They cover every case above plus real upstream 429/500/401/empty/timeout failover, 3-key ordering, cache-key edge cases, concurrency and the no-traceback 500. `frontend/src/*.test.ts(x)` checks the `data-testid` contract, Enter/Shift+Enter, input clearing, the request body and headers, and the 422/503/network error rendering.
 
