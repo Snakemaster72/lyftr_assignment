@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { ApiError, getHealth, sendChat } from "./api";
 import { Composer } from "./components/Composer";
 import { MessageList } from "./components/MessageList";
@@ -11,6 +11,8 @@ export function newSessionId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") return crypto.randomUUID();
   return `s-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
+
+const HEALTH_RETRY_MS = 5000;
 
 let nextId = 0;
 const uid = () => `m${++nextId}`;
@@ -26,11 +28,28 @@ export default function App() {
   const [health, setHealth] = useState<Health | null>(null);
   const [healthError, setHealthError] = useState(false);
 
-  useEffect(() => {
+  // A sleeping free-tier backend fails the first check while it boots (~1 min), so keep retrying.
+  const checkHealth = useCallback(() => {
     getHealth()
-      .then((h) => setHealth(h))
-      .catch(() => setHealthError(true));
+      .then((h) => {
+        setHealth(h);
+        setHealthError(false);
+      })
+      .catch(() => {
+        setHealth(null);
+        setHealthError(true);
+      });
   }, []);
+
+  useEffect(() => {
+    checkHealth();
+  }, [checkHealth]);
+
+  useEffect(() => {
+    if (!healthError) return;
+    const timer = setTimeout(checkHealth, HEALTH_RETRY_MS);
+    return () => clearTimeout(timer);
+  }, [healthError, checkHealth]);
 
   const simulation = preset === "custom" ? customSimulation.trim() : preset;
 
@@ -40,6 +59,7 @@ export default function App() {
     try {
       const res = await sendChat({ sessionId, message: text, systemPrompt, simulateFailure: simulation });
       setMessages((prev) => [...prev, { id: uid(), kind: "assistant", content: res.reply, metadata: res.metadata }]);
+      if (!health) checkHealth();
     } catch (err) {
       const content = err instanceof ApiError ? err.message : "Something went wrong. Please try again.";
       setMessages((prev) => [...prev, { id: uid(), kind: "error", content }]);
@@ -70,7 +90,7 @@ export default function App() {
             {health
               ? `${health.model ?? "backend"} · ${health.keys_configured} keys`
               : healthError
-                ? "backend unreachable"
+                ? "backend unreachable · retrying"
                 : "connecting…"}
           </span>
           <button type="button" className="secondary" onClick={newChat} disabled={pending}>

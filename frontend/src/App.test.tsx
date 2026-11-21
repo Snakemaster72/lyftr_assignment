@@ -141,6 +141,29 @@ describe("App", () => {
     expect(screen.getByTestId("chat-input")).toHaveProperty("value", "");
   });
 
+  it("keeps retrying the health check while a sleeping backend boots", async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      let healthCalls = 0;
+      vi.stubGlobal(
+        "fetch",
+        vi.fn(async (input: RequestInfo | URL) => {
+          if (!String(input).endsWith("/health")) throw new Error("unexpected");
+          healthCalls += 1;
+          if (healthCalls === 1) throw new TypeError("Failed to fetch");
+          return jsonResponse(200, HEALTH);
+        }),
+      );
+      render(<App />);
+      expect((await screen.findByText(/backend unreachable/)).textContent).toMatch(/retrying/);
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(await screen.findByText("groq/test · 2 keys")).toBeTruthy();
+      expect(healthCalls).toBe(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("shows a readable message when the backend is unreachable", async () => {
     mockFetch(() => {
       throw new TypeError("Failed to fetch");
