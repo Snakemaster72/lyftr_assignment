@@ -13,3 +13,6 @@ backend/data/
 node_modules/
 frontend/dist/
 .DS_Store
+
+# Assignment brief (not for publication)
+docs/*.pdf
