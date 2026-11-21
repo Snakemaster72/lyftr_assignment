@@ -6,11 +6,11 @@ React + FastAPI + SQLite chatbot. LiteLLM sits in front of a pool of API keys: i
 
 | | URL |
 |---|---|
-| Frontend | `https://REPLACE-ME.vercel.app` |
-| Backend | `https://REPLACE-ME.fly.dev` |
-| Health | `https://REPLACE-ME.fly.dev/health` |
+| Frontend | `https://REPLACE-ME.onrender.com` (Render static site) |
+| Backend | `https://REPLACE-ME.onrender.com` (Render free web service) |
+| Health | `https://REPLACE-ME.onrender.com/health` |
 
-The deployed backend runs with `ENABLE_FAILURE_SIMULATION=true`, so `X-Simulate-Failure` works there.
+The deployed backend runs with `ENABLE_FAILURE_SIMULATION=true`, so `X-Simulate-Failure` works there. It is on Render's free plan, so **the first request after ~15 idle minutes takes about a minute** (cold start), and chat history does not survive a restart (see *Hosting* below).
 
 ## 2. Run locally
 
@@ -70,7 +70,7 @@ LLM_API_KEYS=a,b LLM_MODEL=openai/fake LLM_API_BASE=http://127.0.0.1:9999/v1 \
 
 ```mermaid
 flowchart LR
-  UI["React SPA<br/>(nginx :3000 / Vercel)"] -- "JSON + X-Simulate-Failure" --> API
+  UI["React SPA<br/>(nginx :3000 / Render static)"] -- "JSON + X-Simulate-Failure" --> API
   subgraph API["FastAPI :8000"]
     direction TB
     V["validate (Pydantic)"] --> H["load session + history"]
@@ -113,8 +113,14 @@ Code map: `backend/app/llm.py` (Router, cache, simulation hook), `routes/chat.py
 - **System prompt:** per session. A `system_prompt` sent with `/chat` is stored and used for that turn and later ones. Otherwise `DEFAULT_SYSTEM_PROMPT` applies. It is never returned by the history endpoint.
 - **LLM input:** `[system] + stored turns (oldest first) + new message`. `HISTORY_MAX_MESSAGES` (default 0 = unlimited) keeps only the most recent N turns, to bound context size. That naturally changes the cache key and `input_tokens`.
 - `DATABASE_URL=sqlite:////data/app.db` → `/data/app.db` (the parent directory is created). WAL mode. `stdlib sqlite3` with one short-lived connection per operation, run off the event loop via the threadpool.
-- `/data` is the `app-data` named volume (Compose) or a Fly volume, so history survives restarts and redeploys. The container starts as root only to `chown /data` (platform volumes are mounted root-owned), then drops to an unprivileged user.
+- `/data` is the `app-data` named volume under Compose, so history survives `make down`/`make up`. The container starts as root only to `chown /data` (platform volumes are mounted root-owned), then drops to an unprivileged user.
 - **Trade-off:** SQLite means one writer and one machine. That's fine here; at scale I'd move to Postgres and keep the same repository functions.
+
+### Hosting
+
+- `render.yaml` is a Render Blueprint: the backend as a Docker web service (it builds the Dockerfile's last stage, `runtime`) and the frontend as a static site with an SPA rewrite. Keys and CORS origins are `sync: false`, so they are entered in the dashboard and never committed.
+- **Trade-off (free plan):** the backend sleeps after ~15 idle minutes (~1 min cold start), and free services cannot mount a disk, so `/data/app.db` is wiped on every restart, redeploy or spin-down. History persists for as long as the instance is up. The fix is `plan: starter` plus the commented `disk` block in `render.yaml` (~$7/mo + $0.25/GB). `backend/fly.toml` is an alternative always-on setup with a volume (~$3/mo).
+- The in-memory cache is lost on the same events. That's harmless: the next identical request is simply live again.
 
 ### Other choices
 
@@ -170,18 +176,18 @@ curl -s $B/sessions/nope/messages            # 404 {"detail":"session not found"
 **`scripts/verify.sh`** runs every scenario above (23 checks) against any backend:
 
 ```bash
-make verify BASE_URL=https://REPLACE-ME.fly.dev
+make verify BASE_URL=https://REPLACE-ME.onrender.com
 ```
 
-Output against the local stack (fake upstream):
+Output against the local backend with real Groq keys (`groq/openai/gpt-oss-20b`):
 
 ```text
 PASS  GET /health -> 200 {status ok, keys_configured>=2, cache_enabled true}
 PASS  POST /chat live -> LIVE_INFERENCE with full metadata
 PASS  same first message in new session -> LLM_CACHE, key_id null, fallback 0
 PASS  cache hit returns the identical reply
-PASS  cache hit reports the stored token usage in=16 out=12
-PASS  cache hit is faster than the live call cache=2ms live=69ms
+PASS  cache hit reports the stored token usage in=100 out=59
+PASS  cache hit is faster than the live call cache=2ms live=690ms
 PASS  a different message is not served from cache LIVE_INFERENCE
 PASS  multi-turn: the bot remembers the name from turn 1
 PASS  GET /sessions/{id}/messages -> 4 messages, oldest first, metadata on assistant
@@ -194,7 +200,7 @@ PASS  422: message over 4000 chars
 PASS  422: empty session_id
 PASS  422: malformed JSON
 PASS  422 requests write nothing to history
-PASS  X-Simulate-Failure: key_1=429 -> 200 answered by key_2
+PASS  X-Simulate-Failure: key_1=429 -> 200 answered by key_2 {"key_id":"key_2","fallback_attempts":1,...}
 PASS  X-Simulate-Failure: key_1=500 -> 200 answered by key_2
 PASS  X-Simulate-Failure: *=429 -> 503 {detail: all providers unavailable}
 PASS  *=429 adds nothing to history before=4 after=4

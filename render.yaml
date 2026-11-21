@@ -1,0 +1,56 @@
+# Render Blueprint: backend (Docker web service) + frontend (static site).
+# Dashboard -> New -> Blueprint -> pick this repo. Render prompts for every `sync: false` value.
+#
+# Free plan caveats (see README "Deployment"):
+#   - the backend spins down after ~15 min idle; the next request waits ~1 min for a cold start.
+#   - free web services cannot attach a disk, so the SQLite file is lost on every restart,
+#     redeploy or spin-down. For persistent history switch to `plan: starter` and uncomment `disk`.
+services:
+  - type: web
+    name: lyftr-chatbot-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./backend/Dockerfile   # the last stage (`runtime`) is the one Render builds
+    dockerContext: ./backend
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PORT                    # the image listens on 8000; tell Render which port to route to
+        value: "8000"
+      - key: LLM_API_KEYS            # comma-separated, at least 2
+        sync: false
+      - key: ALLOWED_ORIGINS         # the frontend URL, e.g. https://lyftr-chatbot-web.onrender.com
+        sync: false
+      - key: DATABASE_URL
+        value: sqlite:////data/app.db
+      - key: ENABLE_FAILURE_SIMULATION
+        value: "true"
+      - key: LLM_MODEL
+        value: groq/openai/gpt-oss-20b
+      - key: LOG_LEVEL
+        value: INFO
+    # disk:                          # paid plans only
+    #   name: app-data
+    #   mountPath: /data
+    #   sizeGB: 1
+
+  - type: web
+    name: lyftr-chatbot-web
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: VITE_API_BASE_URL       # the backend URL, e.g. https://lyftr-chatbot-api.onrender.com
+        sync: false
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /config.js
+        name: Cache-Control
+        value: no-store
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable

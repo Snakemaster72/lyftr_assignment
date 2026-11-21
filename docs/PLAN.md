@@ -169,9 +169,9 @@ fly.toml (backend)  frontend/vercel.json (if needed)
 - [x] Backend tests (fake upstream server) — all PDF behaviours (see §5)
 - [x] `scripts/verify.sh`
 - [ ] CI: ruff + pytest; frontend typecheck + build; compose build; tests inside built backend image
-- [ ] No secrets in git history
+- [x] No secrets in git history (scanned: 0 key matches; `.env` untracked)
 - [x] README headings in order: 1 Live URLs · 2 Run locally (Docker + without) · 3 Design decisions (Mermaid; key fallback, caching, SQLite) · 4 Verification (curl + UI + verify.sh output) · 5 Setup Used (placeholder) · 6 Bonus features
-- [ ] Deployment: backend (persistent /data, no sleep, `ENABLE_FAILURE_SIMULATION=true`), frontend with `VITE_API_BASE_URL`; CORS allows frontend origin
+- [ ] Deployment (user choice: Render free, `render.yaml`): backend Docker web service with `ENABLE_FAILURE_SIMULATION=true`, frontend static site with `VITE_API_BASE_URL`; CORS allows frontend origin. Known trade-off: free plan sleeps and has no disk (history not persistent on the deployed instance)
 
 ## 5. Test matrix (M2)
 
@@ -184,7 +184,7 @@ health shape · happy-path shape/types · multi-turn (2nd upstream payload conta
 - [x] M3 Frontend
 - [~] M4 Docker + Makefile — files written; BLOCKED on local Docker (daemon + compose/buildx plugins) for verification
 - [~] M5 verify.sh, CI, README (CI docker job unverified until Docker is available locally / first push)
-- [ ] M6 Deployment configs + instructions
+- [~] M6 Deployment configs + instructions — `render.yaml` written; real-key `verify.sh` 23/23 locally; awaiting user's Render deploy
 - [ ] Bonuses (only after all green): disk cache on /data, mixed providers via `LLM_MODELS`
 
 ## 7. Verified on litellm 1.110.2 (M1 notes)
