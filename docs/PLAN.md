@@ -132,7 +132,7 @@ fly.toml (backend)  frontend/vercel.json (if needed)
 - [x] SQLite only; `messages` table exactly as PDF (+ index `(session_id, id)`); `sessions` table (`session_id` PK, `system_prompt`, `created_at`, `updated_at`)
 - [x] Schema created on startup; `created_at` ISO-8601 server time
 - [x] `DATABASE_URL=sqlite:////data/app.db` → `/data/app.db`; parent dir created; WAL
-- [ ] File on Docker named volume at `/data`; survives restarts
+- [x] File on Docker named volume at `/data`; survives restarts
 
 ### Env vars (all in `.env.example`, placeholders only)
 - [x] `LLM_API_KEYS` (≥2, fail fast otherwise; ids key_1.. in order)
@@ -158,17 +158,17 @@ fly.toml (backend)  frontend/vercel.json (if needed)
 - [x] Failover demo panel (none / key_1=429 / key_1=500 / *=429 / custom) with note
 
 ### Docker / Makefile
-- [ ] `backend/Dockerfile` multi-stage, slim runtime, non-root, uvicorn :8000
-- [ ] `frontend/Dockerfile` multi-stage, nginx:alpine :3000, SPA fallback
-- [ ] `docker-compose.yml` at root: backend 8000, frontend 3000, named volume `app-data` → `/data`, `env_file: .env`, backend healthcheck, frontend depends_on healthy
-- [ ] Makefile: `up` (copies .env.example→.env with warning), `down`, `logs`, `test`, `verify`, `clean`
-- [ ] Clean clone: `make up` → both URLs → `make down` → `make up` → history persists; image sizes in README
+- [x] `backend/Dockerfile` multi-stage, slim runtime, non-root, uvicorn :8000
+- [x] `frontend/Dockerfile` multi-stage, nginx:alpine :3000, SPA fallback
+- [x] `docker-compose.yml` at root: backend 8000, frontend 3000, named volume `app-data` → `/data`, `env_file: .env`, backend healthcheck, frontend depends_on healthy
+- [x] Makefile: `up` (copies .env.example→.env with warning), `down`, `logs`, `test`, `verify`, `clean`
+- [x] Clean clone: `make up` → both URLs → `make down` → `make up` → history persists; image sizes in README
 
 ### Repo / deliverables
 - [x] Structure: `/backend`, `/frontend`, `docker-compose.yml`, `Makefile`, `.env.example`, `README.md`
 - [x] Backend tests (fake upstream server) — all PDF behaviours (see §5)
 - [x] `scripts/verify.sh`
-- [ ] CI: ruff + pytest; frontend typecheck + build; compose build; tests inside built backend image
+- [x] CI: ruff + pytest; frontend typecheck + build; compose build; tests inside built backend image (each step verified locally; first GitHub run pending push)
 - [x] No secrets in git history (scanned: 0 key matches; `.env` untracked)
 - [x] README headings in order: 1 Live URLs · 2 Run locally (Docker + without) · 3 Design decisions (Mermaid; key fallback, caching, SQLite) · 4 Verification (curl + UI + verify.sh output) · 5 Setup Used (placeholder) · 6 Bonus features
 - [ ] Deployment (user choice: Render free, `render.yaml`): backend Docker web service with `ENABLE_FAILURE_SIMULATION=true`, frontend static site with `VITE_API_BASE_URL`; CORS allows frontend origin. Known trade-off: free plan sleeps and has no disk (history not persistent on the deployed instance)
@@ -182,8 +182,8 @@ health shape · happy-path shape/types · multi-turn (2nd upstream payload conta
 - [x] M1 Backend core
 - [x] M2 Backend tests green
 - [x] M3 Frontend
-- [~] M4 Docker + Makefile — files written; BLOCKED on local Docker (daemon + compose/buildx plugins) for verification
-- [~] M5 verify.sh, CI, README (CI docker job unverified until Docker is available locally / first push)
+- [x] M4 Docker + Makefile — clean clone `make up` OK (both URLs, SPA deep link, runtime config.js), server runs as uid 10001, history survives down/up, `make test` 92 passed in image, real-key verify.sh 23/23 against the containers
+- [x] M5 verify.sh, CI, README (CI steps verified locally; first GitHub Actions run happens on push)
 - [~] M6 Deployment configs + instructions — `render.yaml` written; real-key `verify.sh` 23/23 locally; awaiting user's Render deploy
 - [ ] Bonuses (only after all green): disk cache on /data, mixed providers via `LLM_MODELS`
 

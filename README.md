@@ -35,7 +35,7 @@ make up                     # builds both images and starts the stack
 | `make verify` | `scripts/verify.sh` against `BASE_URL` (default `http://localhost:8000`) |
 | `make clean` | stop and **delete the volume** (all history) |
 
-Image sizes: backend `TODO` MB, frontend `TODO` MB (`docker image ls | grep lyftr`).
+Image sizes (`docker image ls`): backend 776 MB (437 MB is the Python venv; LiteLLM alone is 195 MB), frontend 93 MB (nginx:alpine + the built SPA).
 
 ### Without Docker
 
