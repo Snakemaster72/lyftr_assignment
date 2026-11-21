@@ -12,6 +12,7 @@ def test_health_shape(client):
     assert body["status"] == "ok"
     assert body["keys_configured"] == 2
     assert body["cache_enabled"] is True
+    assert body["failure_simulation"] is True
     assert response.headers["X-Request-ID"]
 
 

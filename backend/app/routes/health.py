@@ -19,6 +19,7 @@ async def health(request: Request) -> JSONResponse:
         "cache_enabled": state.llm.cache_enabled,
         "database": "ok" if db_ok else "unreachable",
         "model": state.settings.models[0],
+        "failure_simulation": state.settings.enable_failure_simulation,
         "version": __version__,
     }
     if not healthy:

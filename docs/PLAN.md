@@ -140,22 +140,22 @@ fly.toml (backend)  frontend/vercel.json (if needed)
 - [x] `ALLOWED_ORIGINS` (CORS; allow `X-Simulate-Failure` + `Content-Type` headers; expose `X-Request-ID`)
 - [x] `ENABLE_FAILURE_SIMULATION`
 - [x] Ours: `LLM_MODEL`, `LLM_MODELS`, `LLM_API_BASE`, `DEFAULT_SYSTEM_PROMPT`, `CACHE_TYPE`, `CACHE_DIR`, `LLM_TIMEOUT_SECONDS`, `HISTORY_MAX_MESSAGES`, `ENABLE_DOCS`, `LOG_LEVEL`
-- [ ] Frontend: `VITE_API_BASE_URL` (build) + runtime `API_BASE_URL` → `/config.js`; fallback `http://localhost:8000`
+- [x] Frontend: `VITE_API_BASE_URL` (build) + runtime `API_BASE_URL` → `/config.js`; fallback `http://localhost:8000`
 
 ### Frontend (data-testid)
-- [ ] `chat-input` (textarea; empty after send; Enter sends, Shift+Enter newline)
-- [ ] `send-button`
-- [ ] `assistant-message` container per reply containing reply text + all meta-*
-- [ ] `meta-source` — exactly `LIVE_INFERENCE` / `LLM_CACHE` (value only)
-- [ ] `meta-model` — model value only
-- [ ] `meta-latency` — `"812 ms"`
-- [ ] `meta-input-tokens` — integer only
-- [ ] `meta-output-tokens` — integer only
-- [ ] `system-prompt-input` (collapsible, sent when non-empty)
-- [ ] New `session_id` (`crypto.randomUUID()`) per page load, memory only; "New chat" button
-- [ ] 422/503/network/timeout → readable message in chat; list-style 422 detail formatted; root error boundary
-- [ ] Thinking state; key_id + fallback_attempts badges (outside meta-*); colour for source
-- [ ] Failover demo panel (none / key_1=429 / key_1=500 / *=429 / custom) with note
+- [x] `chat-input` (textarea; empty after send; Enter sends, Shift+Enter newline)
+- [x] `send-button`
+- [x] `assistant-message` container per reply containing reply text + all meta-*
+- [x] `meta-source` — exactly `LIVE_INFERENCE` / `LLM_CACHE` (value only)
+- [x] `meta-model` — model value only
+- [x] `meta-latency` — `"812 ms"`
+- [x] `meta-input-tokens` — integer only
+- [x] `meta-output-tokens` — integer only
+- [x] `system-prompt-input` (collapsible, sent when non-empty)
+- [x] New `session_id` (`crypto.randomUUID()`) per page load, memory only; "New chat" button
+- [x] 422/503/network/timeout → readable message in chat; list-style 422 detail formatted; root error boundary
+- [x] Thinking state; key_id + fallback_attempts badges (outside meta-*); colour for source
+- [x] Failover demo panel (none / key_1=429 / key_1=500 / *=429 / custom) with note
 
 ### Docker / Makefile
 - [ ] `backend/Dockerfile` multi-stage, slim runtime, non-root, uvicorn :8000
@@ -181,7 +181,7 @@ health shape · happy-path shape/types · multi-turn (2nd upstream payload conta
 
 - [x] M1 Backend core
 - [x] M2 Backend tests green
-- [ ] M3 Frontend
+- [x] M3 Frontend
 - [ ] M4 Docker + Makefile (`make up` from clean clone)
 - [ ] M5 verify.sh, CI, README
 - [ ] M6 Deployment configs + instructions

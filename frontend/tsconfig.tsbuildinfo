@@ -1,0 +1,1 @@
+{"root":["./src/App.test.tsx","./src/App.tsx","./src/api.test.ts","./src/api.ts","./src/config.ts","./src/main.tsx","./src/types.ts","./src/components/AssistantMessage.tsx","./src/components/Composer.tsx","./src/components/ErrorBoundary.tsx","./src/components/MessageList.tsx","./src/components/SettingsPanel.tsx","./vite.config.ts"],"version":"5.9.3"}

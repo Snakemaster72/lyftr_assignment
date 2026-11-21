@@ -33,7 +33,7 @@ def count_tokens(text: str) -> int:
 
 
 class FakeUpstream:
-    def __init__(self) -> None:
+    def __init__(self, port: int = 0) -> None:
         self.requests: list[dict[str, Any]] = []
         self._lock = threading.Lock()
         upstream = self
@@ -91,7 +91,7 @@ class FakeUpstream:
                 self.end_headers()
                 self.wfile.write(data)
 
-        self._server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self._server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
         self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
 
     @property
@@ -114,3 +114,13 @@ class FakeUpstream:
     def stop(self) -> None:
         self._server.shutdown()
         self._server.server_close()
+
+
+if __name__ == "__main__":
+    # Local demo without real keys:  python -m tests.fake_upstream 9999
+    #   LLM_API_BASE=http://127.0.0.1:9999/v1 LLM_MODEL=openai/fake LLM_API_KEYS=a,b
+    import sys
+
+    server = FakeUpstream(port=int(sys.argv[1]) if len(sys.argv) > 1 else 9999)
+    print(f"fake upstream on {server.base_url}", flush=True)
+    server._server.serve_forever()
